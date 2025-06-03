@@ -1,6 +1,7 @@
 import socket
 import threading
 import time
+import random
 
 DEFAULT_HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
 DEFAULT_PORT = 9999        # Port to listen on
@@ -140,17 +141,29 @@ if __name__ == '__main__':
     streamer.start_server()
 
     if streamer.running:
-        print("Server is running. Sending test emotions for 20 seconds.")
+        print("Server is running. Sending random emotions every millisecond. Press Ctrl+C to stop.")
+        # Define a list of emotions
+        EMOTIONS_LIST = ["happy", "sad", "angry", "surprised", "neutral", "fear", "disgust"]
         try:
-            i = 0
             while True:
-                emotion = f"TestEmotion_{i}"
-                print(f"Sending: {emotion}")
-                streamer.send_emotion(emotion)
-                time.sleep(1)
-                i += 1
+                current_emotion = random.choice(EMOTIONS_LIST)
+                persistence_duration = random.uniform(0.5, 3.0)  # Duration for this emotion
+                # The user had print(f"Main: Sending: {emotion}") uncommented, so let's adapt it.
+                # This print will now show when a new emotion is CHOSEN, not every send.
+                print(f"Main: New emotion chosen: '{current_emotion}'. Will send repeatedly for {persistence_duration:.2f}s.")
+
+                start_time = time.time()
+                while time.time() - start_time < persistence_duration:
+                    streamer.send_emotion(current_emotion)  # Send the same emotion repeatedly
+                    time.sleep(0.001)  # Send data (approximately) every millisecond
+                    # Allow graceful exit if server stops during this tight loop
+                    if not streamer.running:
+                        break
+                
+                if not streamer.running: # If server stopped, break outer loop too
+                    break
         except KeyboardInterrupt:
-            print("Test interrupted by user.")
+            print("\nTest interrupted by user.") # Added newline for cleaner exit
         finally:
             streamer.stop_server()
     else:
